@@ -1,3 +1,5 @@
+import json
+import random
 from unittest import mock
 from nose.tools import assert_equal, make_decorator
 
@@ -8,6 +10,25 @@ def func(test_case):
     'Provide a shortcut for the corresponding function.'
     f = getattr(scan, test_case.__name__.replace('test_', ''))
     return make_decorator(test_case)(lambda: test_case(f))
+
+
+@func
+@mock.patch('scan.requests.get')
+def test_search_code(f, http_mock):
+    PAGES, ITEMS = 5, 30
+
+    values = [
+        {'items': [random.random() for i in range(ITEMS)]}
+        for j in range(PAGES)
+    ]
+    empty = {'items': []}
+
+    response_mock = lambda: json.dumps(values.pop(0) if values else empty)
+    http_mock.side_effect = lambda *_, **__: mock.Mock(text=response_mock())
+
+    expect = sum((d['items'] for d in values), [])
+    assert_equal(list(f('')), expect)
+    assert_equal(http_mock.call_count, PAGES + 1)
 
 
 @func
