@@ -6,6 +6,7 @@ import json
 import os
 import re
 import requests
+import string
 import sys
 import time
 from typing import Callable, Iterable, TextIO, Tuple
@@ -82,10 +83,21 @@ def find_php_db_password(code: str) -> str:
     passwords = set()
     others = set()
     for k, v in find_php_constants(code):
-        (passwords if 'PASSWORD' in k else others).add(v)
+        (passwords if 'PASSWORD' in k.upper() else others).add(v)
     for password in passwords:
-        if not any(i for i in others if password in i or i in password):
+        if check_password_strength(password, others):
             return password
+
+
+def check_password_strength(p: str, others: set) -> bool:
+    'Exclude invalid passwords.'
+    return not (
+        any(i for i in others if p in i or i in p)
+        or len(p) < 6
+        or all(i == '*' for i in p)
+        or all(p in string.digits for i in p)
+        or p[0] + p[-1] in ['{}', '[]', '<>']
+    )
 
 
 def main(patterns: Iterable[Tuple], file: TextIO):
@@ -101,8 +113,14 @@ def main(patterns: Iterable[Tuple], file: TextIO):
 
 if __name__ == '__main__':
     path = sys.argv[1] if len(sys.argv) > 1 else 'leaked.txt'
+    tld = '''
+        . com org net edu gov me io tk azure amazonaws hostinger
+        ru cn com.cn edu.cn tw hk jp co.jp ne.jp in
+        uk au us ca mx br ar de fr se nl fi no ch es it
+    '''.split()
     patterns = {
-        'define DB_PASSWORD': find_php_db_password,
+        i + ' define DB_PASSWORD': find_php_db_password
+        for i in tld
     }
     with open(path, 'a') as f:
         main(patterns.items(), f)

@@ -54,9 +54,12 @@ def test_find_php_constants(f):
 def test_find_php_db_password(f, constants_mock):
     constants_mock.return_value = [
         ('PASSWORD', ''),
-        ('PASSWORD', 'local'),
+        ('PASSWORD', 'root'),
         ('HOSTNAME', 'localhost'),
         ('PASSWORD', 'localhost-8080.com'),
+        ('PASSWORD', '{% pass %}'),
+        ('PASSWORD', '1234567'),
+        ('PASSWORD', '*******'),
         ('PASSWORD', 'correct'),
     ]
     assert_equal(f(''), 'correct')
