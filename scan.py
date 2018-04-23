@@ -7,7 +7,10 @@ import requests
 from typing import Tuple, Iterable
 
 API = 'https://api.github.com'
-TOKEN = {'Authorization': 'token ' + os.environ.get('GITHUB_TOKEN', '')}
+HEADERS = {
+    'Authorization': 'token ' + os.environ.get('GITHUB_TOKEN', ''),
+    'Accept': 'application/vnd.github.v3.text-match+json',
+}
 
 
 def test_login(*auth: Tuple[str, str]) -> bool:
@@ -20,7 +23,7 @@ def search_code(keywords: str) -> Iterable[dict]:
     'Search across all the public repositories.'
     for i in itertools.count():
         params = dict(q=keywords, page=i)
-        r = requests.get(API + '/search/code', params, headers=TOKEN)
+        r = requests.get(API + '/search/code', params, headers=HEADERS)
         items = json.loads(r.text)['items']
         if items:
             yield from items
