@@ -66,7 +66,7 @@ def progress(dot='.', file=sys.stdout):
 
 def find_php_constants(code: str) -> Iterable[Tuple[str, str]]:
     'Extract constant definitions from the code snippet.'
-    PATTERN = r'define(\(.+?,.+?\));'
+    PATTERN = r'define\s*(\(.+?,.+?\));'
     for match in re.finditer(PATTERN, code):
         try:
             yield ast.literal_eval(match.group(1))
