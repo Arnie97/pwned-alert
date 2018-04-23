@@ -1,3 +1,4 @@
+from unittest import mock
 from nose.tools import assert_equal, make_decorator
 
 import scan
@@ -25,3 +26,16 @@ def test_find_php_constants(f):
         ('DB_USERNAME', 'vagrant'),
     ]
     assert_equal(list(f(code)), expect)
+
+
+@func
+@mock.patch('scan.find_php_constants')
+def test_find_php_db_password(f, constants_mock):
+    constants_mock.return_value = [
+        ('PASSWORD', ''),
+        ('PASSWORD', 'local'),
+        ('HOSTNAME', 'localhost'),
+        ('PASSWORD', 'localhost-8080.com'),
+        ('PASSWORD', 'correct'),
+    ]
+    assert_equal(f(''), 'correct')
