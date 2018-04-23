@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 import os
+import itertools
 import json
 import requests
-from typing import Tuple
+from typing import Tuple, Iterable
 
 API = 'https://api.github.com'
 TOKEN = {'Authorization': 'token ' + os.environ.get('GITHUB_TOKEN', '')}
@@ -15,7 +16,13 @@ def test_login(*auth: Tuple[str, str]) -> bool:
     return r.status_code == 200
 
 
-def search_code(keywords: str) -> dict:
+def search_code(keywords: str) -> Iterable[dict]:
     'Search across all the public repositories.'
-    r = requests.get(API + '/search/code', dict(q=keywords), headers=TOKEN)
-    return json.loads(r.text)
+    for i in itertools.count():
+        params = dict(q=keywords, page=i)
+        r = requests.get(API + '/search/code', params, headers=TOKEN)
+        items = json.loads(r.text)['items']
+        if items:
+            yield from items
+        else:
+            return
