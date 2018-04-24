@@ -73,9 +73,12 @@ def find_php_constants(code: str) -> Iterable[Tuple[str, str]]:
     PATTERN = r'define\s*(\(.+?,.+?\));'
     for match in re.finditer(PATTERN, code):
         try:
-            yield ast.literal_eval(match.group(1))
+            pair = ast.literal_eval(match.group(1))
+            assert all(isinstance(i, str) for i in pair)
         except:
             pass
+        else:
+            yield pair
 
 
 def find_php_db_password(code: str) -> str:

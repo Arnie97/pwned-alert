@@ -39,6 +39,7 @@ def test_find_php_constants(f):
         #define DB_PASSWORD "test"
         define("DB_NAME",'admin');
         defined('DB_USERNAME') or define('DB_USERNAME', 'vagrant');
+        define("PAGE_SIZE", 5);
     '''
     expect = [
         ('DB_PASSWORD', ''),
