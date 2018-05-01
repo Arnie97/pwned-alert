@@ -1,7 +1,6 @@
 import json
 import random
 from unittest import mock
-from nose.tools import assert_equal, make_decorator
 
 import scan
 
@@ -9,7 +8,7 @@ import scan
 def func(test_case):
     'Provide a shortcut for the corresponding function.'
     f = getattr(scan, test_case.__name__.replace('test_', ''))
-    return make_decorator(test_case)(lambda: test_case(f))
+    return lambda: test_case(f)
 
 
 @func
@@ -27,8 +26,8 @@ def test_search_code(f, http_mock):
     http_mock.side_effect = lambda *_, **__: mock.Mock(text=response_mock())
 
     expect = sum((d['items'] for d in values), [])
-    assert_equal(list(f('')), expect)
-    assert_equal(http_mock.call_count, PAGES + 1)
+    assert list(f('')) == expect
+    assert http_mock.call_count == PAGES + 1
 
 
 @func
@@ -47,7 +46,7 @@ def test_find_php_constants(f):
         ('DB_NAME', 'admin'),
         ('DB_USERNAME', 'vagrant'),
     ]
-    assert_equal(list(f(code)), expect)
+    assert list(f(code)) == expect
 
 
 @func
@@ -63,4 +62,4 @@ def test_find_php_db_password(f, constants_mock):
         ('PASSWORD', '*******'),
         ('PASSWORD', 'correct'),
     ]
-    assert_equal(f(''), 'correct')
+    assert f('') == 'correct'
