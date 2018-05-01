@@ -23,6 +23,7 @@ HEADERS = {
 
 def validate_login(*auth: Tuple[str, str]) -> bool:
     'Try to login with the username and password.'
+    auth = tuple(s.encode('utf-8') for s in auth)
     r = requests.get(API, auth=auth)
     return r.status_code == 200
 
