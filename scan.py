@@ -28,10 +28,11 @@ def validate_login(*auth: Tuple[str, str]) -> bool:
     return r.status_code == 200
 
 
-def search_code(keywords: str) -> Iterable[dict]:
+def search_code(keywords: str, pause=10) -> Iterable[dict]:
     'Search across all the public repositories.'
     for i in itertools.count():
         params = dict(q=keywords, page=i)
+        time.sleep(pause)
         r = requests.get(API + '/search/code', params, headers=HEADERS)
         result = json.loads(r.text)
         items = result.get('items')
@@ -130,7 +131,7 @@ if __name__ == '__main__':
     path = sys.argv[1] if len(sys.argv) > 1 else 'leaked.txt'
     tld = '''
         . com org net edu gov me io tk azure amazonaws hostinger
-        ru cn com.cn edu.cn tw hk jp co.jp ne.jp in
+        ru cn com.cn edu.cn tw hk com.hk edu.hk jp co.jp ne.jp in
         uk au us ca mx br ar de fr se nl fi no ch es it
     '''.split()
     patterns = {
