@@ -139,5 +139,5 @@ if __name__ == '__main__':
         i + ' define DB_PASSWORD': find_php_db_password
         for i in tld
     }
-    with open(path, 'a') as f:
+    with open(path, 'a', 1, 'utf-8') as f:
         main(patterns.items(), f)
