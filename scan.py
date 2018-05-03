@@ -32,6 +32,7 @@ def search_code(keywords: str, pause=10) -> Iterable[dict]:
     'Search across all the public repositories.'
     for i in itertools.count():
         params = dict(q=keywords, page=i)
+        progress(';')
         time.sleep(pause)
         r = requests.get(API + '/search/code', params, headers=HEADERS)
         result = json.loads(r.text)
@@ -39,7 +40,7 @@ def search_code(keywords: str, pause=10) -> Iterable[dict]:
         if items:
             yield from items
         else:
-            print('\n', result.get('message', result))
+            print('\n{}: {}\n'.format(keywords, result.get('message', result)))
             return
 
 
