@@ -21,11 +21,19 @@ HEADERS = {
 }
 
 
-def validate_login(*auth: Tuple[str, str]) -> bool:
+def validate_login(*auth: Tuple[str, str], pause=60) -> bool:
     'Try to login with the username and password.'
     auth = tuple(s.encode('utf-8') for s in auth)
-    r = requests.get(API, auth=auth)
-    return r.status_code == 200
+    codes = {
+        200: True,
+        401: False,
+    }
+    while True:
+        code = requests.get(API, auth=auth).status_code
+        if code in codes:
+            return codes[code]
+        progress('!')
+        time.sleep(pause)
 
 
 def search_code(keywords: str, pause=10) -> Iterable[dict]:
