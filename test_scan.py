@@ -1,4 +1,3 @@
-import json
 import random
 from unittest import mock
 
@@ -20,13 +19,11 @@ def test_search_code(f, http_mock):
         {'items': [random.random() for i in range(ITEMS)]}
         for j in range(PAGES)
     ]
-    empty = {'items': []}
-
-    response_mock = lambda: json.dumps(values.pop(0) if values else empty)
-    http_mock.side_effect = lambda *_, **__: mock.Mock(text=response_mock())
+    values.append({'items': []})
+    http_mock.return_value = mock.Mock(json=mock.Mock(side_effect=values))
 
     expect = sum((d['items'] for d in values), [])
-    assert list(f('')) == expect
+    assert list(f('', pause=0)) == expect
     assert http_mock.call_count == PAGES + 1
 
 
